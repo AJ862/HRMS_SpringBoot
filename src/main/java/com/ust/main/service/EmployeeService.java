@@ -1,9 +1,12 @@
 package com.ust.main.service;
 
-import com.ust.main.model.Employee;
-import com.ust.main.model.Leaves;
+import com.ust.main.model.*;
 import com.ust.main.repository.EmployeeRepository;
+import com.ust.main.repository.LeaveApplicationRepository;
+import com.ust.main.repository.LeaveRepository;
+import com.ust.main.response.ConfirmMessage;
 import com.ust.main.response.EmployeeResponse;
+import com.ust.main.response.LeaveApplicationResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,15 +26,24 @@ public class EmployeeService {
     @Autowired
     EmployeeRepository employeeRepository;
 
+    @Autowired
+    LeaveRepository leaveRepository;
+
+
+    @Autowired
+    LeaveApplicationRepository leaveApplicationRepository;
+
+//    @Value("${leaves.numOfLeaves}")
+//    private int numOfLeaves;
+
     @Value("${leaves.privilege}")
     private int privilegeLeaves;
 
     @Value("${leaves.sick.leave}")
     private int sickLeaves;
 
-    @Value("${leaves.bereavment}")
-    private int bereavmentLeaves;
-
+    @Value("${leaves.bereavement}")
+    private int bereavementLeaves;
 
     public boolean employeeExistsById(long employeeId) {
         if (employeeRepository.existsById(employeeId))
@@ -88,6 +101,12 @@ public class EmployeeService {
         }
     }
 
+    public Employee getEmployeeByEmployeeId(long employeeId) {
+        Optional<Employee> employeeOptional =  employeeRepository.findById(employeeId);
+        return employeeOptional.isPresent() ? employeeOptional.get() : null;
+
+    }
+
     public ResponseEntity<EmployeeResponse> getEmployeeById(long employeeId) {
         EmployeeResponse getByIdEmployeeResponse = new EmployeeResponse();
         if (employeeExistsById(employeeId)) {
@@ -103,6 +122,12 @@ public class EmployeeService {
         }
     }
 
+
+    public Employee saveUpdatedEmployee(Employee employee) {
+        employeeRepository.findById(employee.getEmployeeId());
+       return employeeRepository.saveAndFlush(employee);
+    }
+
     public ResponseEntity<EmployeeResponse> saveEmployee(Employee employee) {
         EmployeeResponse saveEmployeeResponse = new EmployeeResponse();
 
@@ -113,19 +138,28 @@ public class EmployeeService {
             saveEmployeeResponse.setResponseMessage("Employee Already Exists!");
             return new ResponseEntity<>(saveEmployeeResponse, HttpStatus.CONFLICT);
         } else {
+
             employee.setCurrentEmployee(true);
             employee.setLastWorkingDay(null);
             Leaves leaves = new Leaves();
-            leaves.setBereavementLeaves(this.bereavmentLeaves);
+            leaves.setBereavementLeaves(this.bereavementLeaves);
             leaves.setSickLeaves(this.sickLeaves);
-            leaves.setEarnedLeaves(this.privilegeLeaves);
+            leaves.setPrivilegeLeaves(this.privilegeLeaves);
             employee.setLeaves(leaves);
             employeeRepository.save(employee);
+
             saveEmployeeResponse.setResponseMessage("Employee Details Saved Successfully.");
+
             saveEmployeeResponse.setEmployeeResponse(employeeRepository.findByEmailId(employee.getEmailId()));
+
             return new ResponseEntity<>(saveEmployeeResponse, HttpStatus.OK);
         }
     }
+
+    public void deleteEmployeeById(long employeeId) {
+        employeeRepository.deleteById(employeeId);
+    }
+
 
     public ResponseEntity<String> deleteEmployee(long employeeId, LocalDate LWD) {
 
@@ -143,6 +177,7 @@ public class EmployeeService {
             tempEmployee.setLastName(tempEmployee.getLastName());
 
             employeeRepository.save(tempEmployee);
+
             return ResponseEntity.status(HttpStatus.OK).body("Employee Deleted Successfully");
 
         } else {
@@ -171,4 +206,132 @@ public class EmployeeService {
         }
     }
 
+    public ResponseEntity<EmployeeResponse> applyLeaves(Employee employeeLeaves, long empId) {
+//        Optional<Employee> optionalTempEmployee = employeeRepository.findById(empId);
+//        EmployeeResponse leaveEmployeeResponse = new EmployeeResponse();
+//
+//        if(optionalTempEmployee.isPresent() && optionalTempEmployee.get().isCurrentEmployee()){
+//            Employee tempEmployee = optionalTempEmployee.get();
+//            int requestedLeaves = employeeLeaves.getAppliedLeaves();
+//
+//            if (requestedLeaves > tempEmployee.getLeaves()){
+//                leaveEmployeeResponse.setResponseMessage("Your remaining leaves are "+tempEmployee.getLeaves()+". Please select valid number of leaves to apply.");
+//                return new ResponseEntity<>(leaveEmployeeResponse, HttpStatus.BAD_REQUEST);
+//            }else{
+//                leaveEmployeeResponse.setAppliedLeaves(tempEmployee.getAppliedLeaves() + requestedLeaves);
+//                leaveEmployeeResponse.setResponseMessage("Leave request sent successfully.");
+//                leaveEmployeeResponse.setLeaves(tempEmployee.getLeaves());
+//                tempEmployee.setAppliedLeaves(tempEmployee.getAppliedLeaves() + requestedLeaves);
+//                tempEmployee.setEmployeeId(empId);
+//                employeeRepository.save(tempEmployee);
+//
+//
+//
+//                return new ResponseEntity<>(leaveEmployeeResponse, HttpStatus.OK);
+//            }
+        return null;
+    }
+
+    public ResponseEntity<EmployeeResponse> getMyLeavesData(long empId){
+        Optional<Employee> optionalEmployee = employeeRepository.findById(empId);
+        EmployeeResponse leaveResponse = new EmployeeResponse();
+
+        if (optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee()){
+
+            Leaves tempLeaves = optionalEmployee.get().getLeaves();
+
+            leaveResponse.setLeaves(tempLeaves);
+            leaveResponse.setResponseMessage("Here is your leave Data");
+            return new ResponseEntity<>(leaveResponse, HttpStatus.OK);
+        }else{
+            leaveResponse.setResponseMessage("Please enter a valid employee Id.");
+            return new ResponseEntity<>(leaveResponse, HttpStatus.BAD_REQUEST);
+        }
+
+    }
+
+    public ResponseEntity<List<LeaveApplicationResponse>> getAllLeavesData(long employeeId) {
+
+        Optional<Employee> optionalEmployee = employeeRepository.findById(employeeId);
+        List<LeaveApplicationResponse> leaveApplicationResponse = (List<LeaveApplicationResponse>) new LeaveApplicationResponse();
+
+        if(optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee() && optionalEmployee.get().getRole() == Role.HR){
+
+           leaveApplicationResponse.add((LeaveApplicationResponse) leaveApplicationRepository.findAll());
+
+            return new ResponseEntity<>(leaveApplicationResponse, HttpStatus.OK);
+        }
+return null;
+    }
+
+    public ResponseEntity<ConfirmMessage> approveLeave(long hrId, long appId, int action) {
+        Optional<Employee> optionalEmployee = employeeRepository.findById(hrId);
+        Optional<LeaveApplication> optionalLeaveApplication = leaveApplicationRepository.findById(appId);
+        ConfirmMessage confirmMessage = new ConfirmMessage();
+
+        if(optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee() && optionalEmployee.get().getRole() == Role.HR && optionalLeaveApplication.isPresent()){
+
+            LeaveApplication leaveApplication = optionalLeaveApplication.get();
+
+            if(leaveApplication.isLeaveApproved() || leaveApplication.isLeaveRejected()){
+                confirmMessage.setRequestStatus("Leave has already been operated on!");
+                return new ResponseEntity<>(confirmMessage, HttpStatus.BAD_REQUEST);
+            }else if(action == 1){
+                leaveApplication.setLeaveApproved(true);
+                leaveApplication.setApplicationId(appId);
+                Employee employee = leaveApplication.getEmployee();
+                Leaves leaves = employee.getLeaves();
+
+                if(leaveApplication.getLeaveType() == LeaveType.PRIVILEGE_LEAVES){
+                   leaves.setPrivilegeLeaves(leaves.getPrivilegeLeaves() - leaveApplication.getNumerOfDays());
+                } else if (leaveApplication.getLeaveType() == LeaveType.BEREAVEMENT_LEAVES) {
+                    leaves.setBereavementLeaves(leaves.getBereavementLeaves() - leaveApplication.getNumerOfDays());
+                }else {
+                    leaves.setSickLeaves(leaves.getSickLeaves() - leaveApplication.getNumerOfDays());
+                }
+
+                //employee.setLeaves(leaves);
+                updateEmployee(employee, leaveApplication.getEmployee().getEmployeeId());
+
+                employeeRepository.save(employee);
+                leaveApplicationRepository.save(leaveApplication);
+                confirmMessage.setRequestStatus("Leave Approved!");
+
+                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
+            }else if(action == 0){
+                leaveApplication.setLeaveRejected(true);
+                leaveApplication.setApplicationId(appId);
+                leaveApplicationRepository.save(leaveApplication);
+                confirmMessage.setRequestStatus("Leave Rejected!");
+
+                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
+            }
+        }
+        else{
+            confirmMessage.setRequestStatus("Oops! Something went wrong...");
+            return new ResponseEntity<>(confirmMessage, HttpStatus.UNAUTHORIZED);
+        }
+
+        return null;
+    }
+
+
+
+
+
 }
+
+//    public void getAllLeavesData() {
+//        Optional<Employee> tempEmployee =  employeeRepository.findById(empId);
+//        EmployeeResponse employeeResponse = new EmployeeResponse();
+//
+//        if(tempEmployee.isPresent() && tempEmployee.get().isCurrentEmployee()){
+//            employeeResponse.setResponseMessage("Here are your leaves: ");
+//            employeeResponse.setLeaves(tempEmployee.get().getLeaves());
+//            return new ResponseEntity<>(employeeResponse, HttpStatus.OK);
+//        }else {
+//            employeeResponse.setResponseMessage("Please enter a valid Employee Id.");
+//            return new ResponseEntity<>(employeeResponse, HttpStatus.BAD_REQUEST);
+//        }
+//    }
+

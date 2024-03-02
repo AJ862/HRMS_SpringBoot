@@ -10,9 +10,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
 //public void saveByEmployeeId(long EmployeeId);
 
-    boolean existsByEmailId(String emailId);
+     boolean existsByEmailId(String emailId);
 
-    Employee findByEmailId(String emailId);
+     Employee findByEmailId(String emailId);
 
 
 }
