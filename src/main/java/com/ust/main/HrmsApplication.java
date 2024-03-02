@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan("com.ust.main")
 public class HrmsApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(HrmsApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(HrmsApplication.class, args);
+	}
 
 }

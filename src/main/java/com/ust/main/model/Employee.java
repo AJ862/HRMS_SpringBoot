@@ -1,9 +1,11 @@
 package com.ust.main.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "employee")
@@ -31,7 +33,13 @@ public class Employee {
     private Role role;
 
     @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "leave_id")
     private Leaves leaves;
+
+
+    @OneToMany(mappedBy =  "employee")
+    private List<LeaveApplication> leaveApplication;
+
 
     public Leaves getLeaves() {
         return leaves;
@@ -113,5 +121,13 @@ public class Employee {
 
     public void setLastWorkingDay(LocalDate lastWorkingDay) {
         this.lastWorkingDay = lastWorkingDay;
+    }
+
+    public List<LeaveApplication> getLeaveApplication() {
+        return leaveApplication;
+    }
+
+    public void setLeaveApplication(List<LeaveApplication> leaveApplication) {
+        this.leaveApplication = leaveApplication;
     }
 }

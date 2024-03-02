@@ -1,34 +1,48 @@
 package com.ust.main.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 
 @Entity(name = "employee_leaves")
+@Table(name = "leaves")
 public class Leaves {
 
 //    EARNED_LEAVES,
 //    SICK_LEAVES,
 //    BEREAVEMENT_LEAVES
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @Column(name = "leave_id")
+    private int leaveId;
 
-    private int earnedLeaves;
+    private int privilegeLeaves;
 
     private int sickLeaves;
 
     private int bereavementLeaves;
 
+//    private int numOfLeaves;
 
-    public int getEarnedLeaves() {
-        return earnedLeaves;
+    @OneToOne(mappedBy = "leaves")
+    @JsonIgnore
+    private Employee employee;
+
+    public Employee getEmployee() {
+        return employee;
     }
 
-    public void setEarnedLeaves(int earnedLeaves) {
-        this.earnedLeaves = earnedLeaves;
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
+    }
+
+    public int getPrivilegeLeaves() {
+        return privilegeLeaves;
+    }
+
+    public void setPrivilegeLeaves(int privilegeLeaves) {
+        this.privilegeLeaves = privilegeLeaves;
     }
 
     public int getSickLeaves() {
