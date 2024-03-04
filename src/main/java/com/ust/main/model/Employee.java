@@ -32,21 +32,18 @@ public class Employee {
 
     private Role role;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "leave_id")
-    private Leaves leaves;
-
-
     @OneToMany(mappedBy =  "employee")
     private List<LeaveApplication> leaveApplication;
 
+    @OneToMany
+    private List<LeaveBalance> leaveBalances;
 
-    public Leaves getLeaves() {
-        return leaves;
+    public List<LeaveBalance> getLeaveBalances() {
+        return leaveBalances;
     }
 
-    public void setLeaves(Leaves leaves) {
-        this.leaves = leaves;
+    public void setLeaveBalances(List<LeaveBalance> leaveBalances) {
+        this.leaveBalances = leaveBalances;
     }
 
     public Role getRole() {

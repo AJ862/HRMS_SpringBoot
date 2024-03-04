@@ -2,13 +2,9 @@ package com.ust.main.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ust.main.model.Employee;
-import com.ust.main.model.Leaves;
-import org.springframework.http.HttpMessage;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import com.ust.main.model.LeavesMaster;
 
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -35,7 +31,7 @@ public class EmployeeResponse {
       this.approvedLeaves = approvedLeaves;
    }
 
-   private Leaves leaves;
+   private LeavesMaster leavesMaster;
 
 
    public LocalDate getCurrentlyAppliedLeaveTo() {
@@ -46,8 +42,8 @@ public class EmployeeResponse {
       this.currentlyAppliedLeaveTo = currentlyAppliedLeaveTo;
    }
 
-   public Leaves getLeaves() {
-      return leaves;
+   public LeavesMaster getLeaves() {
+      return leavesMaster;
    }
 
    public LocalDate getCurrentlyAppliedLeaveFrom() {
@@ -58,8 +54,8 @@ public class EmployeeResponse {
       this.currentlyAppliedLeaveFrom = currentlyAppliedLeaveFrom;
    }
 
-   public void setLeaves(Leaves leaves) {
-      this.leaves = leaves;
+   public void setLeaves(LeavesMaster leavesMaster) {
+      this.leavesMaster = leavesMaster;
    }
 
 

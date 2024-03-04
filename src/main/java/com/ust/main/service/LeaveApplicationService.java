@@ -67,57 +67,58 @@ public class LeaveApplicationService {
 
 
     private Set<String> validateLeaveApplication(LeaveApplicationResource leaveApplicationResource, Employee employee) {
-        Set<String>  errorMessages = new HashSet<>();
+//        Set<String>  errorMessages = new HashSet<>();
+//
+//        if(employee != null && employee.isCurrentEmployee()) {
+//            if(leaveApplicationResource.getFromDate()  == null ) {
+//                errorMessages.add("Leave fromDate is empty");
+//            }
+//            if(leaveApplicationResource.getToDate() == null) {
+//                errorMessages.add("Leave toDate is Empty");
+//            }
+//            if(leaveApplicationResource.getLeaveType() == null) {
+//                errorMessages.add("Leave Type is null or empty");
+//            }
+//            LeaveType leaveType = leaveApplicationResource.getLeaveType();
+//
+//            int numberOfAppliedDays = 0;
+//            if(leaveApplicationResource.getFromDate() != null && leaveApplicationResource.getToDate() != null) {
+//                if (leaveApplicationResource.getToDate().isBefore(leaveApplicationResource.getFromDate())) {
+//                    errorMessages.add("Leave To Date cannot be before leave from date");
+//                } else {
+//                    numberOfAppliedDays = Period.between(leaveApplicationResource.getFromDate(), leaveApplicationResource.getToDate()).getDays();
+//                    switch (leaveType) {
+//                        case SICK_LEAVES -> {
+//                            int sickLeaveCount = employee.getLeaves().getSickLeaves();
+//                            if (numberOfAppliedDays > 3) {
+//                                errorMessages.add("You cannot apply sick leaves for more that 3 days");
+//                            }
+//                            if (sickLeaveCount < numberOfAppliedDays) {
+//                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, sickLeaveCount, leaveType));
+//                            }
+//                        }
+//                        case BEREAVEMENT_LEAVES -> {
+//                            int bereavementLeaves = employee.getLeaves().getSickLeaves();
+//                            if (bereavementLeaves < numberOfAppliedDays) {
+//                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, bereavementLeaves, leaveType));
+//                            }
+//                        }
+//                        case PRIVILEGE_LEAVES -> {
+//                            int privilegeLeaveCount = employee.getLeaves().getPrivilegeLeaves();
+//                            if (privilegeLeaveCount < numberOfAppliedDays) {
+//                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, privilegeLeaveCount, leaveType));
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//        }else {
+//            errorMessages.add("Please enter a valid Employee ID.");
+//        }
 
-        if(employee != null && employee.isCurrentEmployee()) {
-            if(leaveApplicationResource.getFromDate()  == null ) {
-                errorMessages.add("Leave fromDate is empty");
-            }
-            if(leaveApplicationResource.getToDate() == null) {
-                errorMessages.add("Leave toDate is Empty");
-            }
-            if(leaveApplicationResource.getLeaveType() == null) {
-                errorMessages.add("Leave Type is null or empty");
-            }
-            LeaveType leaveType = leaveApplicationResource.getLeaveType();
-
-            int numberOfAppliedDays = 0;
-            if(leaveApplicationResource.getFromDate() != null && leaveApplicationResource.getToDate() != null) {
-                if (leaveApplicationResource.getToDate().isBefore(leaveApplicationResource.getFromDate())) {
-                    errorMessages.add("Leave To Date cannot be before leave from date");
-                } else {
-                    numberOfAppliedDays = Period.between(leaveApplicationResource.getFromDate(), leaveApplicationResource.getToDate()).getDays();
-                    switch (leaveType) {
-                        case SICK_LEAVES -> {
-                            int sickLeaveCount = employee.getLeaves().getSickLeaves();
-                            if (numberOfAppliedDays > 3) {
-                                errorMessages.add("You cannot apply sick leaves for more that 3 days");
-                            }
-                            if (sickLeaveCount < numberOfAppliedDays) {
-                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, sickLeaveCount, leaveType));
-                            }
-                        }
-                        case BEREAVEMENT_LEAVES -> {
-                            int bereavementLeaves = employee.getLeaves().getSickLeaves();
-                            if (bereavementLeaves < numberOfAppliedDays) {
-                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, bereavementLeaves, leaveType));
-                            }
-                        }
-                        case PRIVILEGE_LEAVES -> {
-                            int privilegeLeaveCount = employee.getLeaves().getPrivilegeLeaves();
-                            if (privilegeLeaveCount < numberOfAppliedDays) {
-                                errorMessages.add(String.format(LEAVE_ERROR_MESSAGE, privilegeLeaveCount, leaveType));
-                            }
-                        }
-                    }
-                }
-            }
-
-        }else {
-            errorMessages.add("Please enter a valid Employee ID.");
-        }
-
-        return errorMessages;
+//        return errorMessages;
+        return null;
     }
 
 }

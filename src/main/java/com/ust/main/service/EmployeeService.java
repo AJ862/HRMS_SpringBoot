@@ -1,15 +1,12 @@
 package com.ust.main.service;
 
 import com.ust.main.model.*;
-import com.ust.main.repository.EmployeeRepository;
-import com.ust.main.repository.LeaveApplicationRepository;
-import com.ust.main.repository.LeaveRepository;
+import com.ust.main.repository.*;
 import com.ust.main.response.ConfirmMessage;
 import com.ust.main.response.EmployeeResponse;
 import com.ust.main.response.LeaveApplicationResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -29,21 +26,36 @@ public class EmployeeService {
     @Autowired
     LeaveRepository leaveRepository;
 
-
+    @Autowired
+    LeaveBalanceRepository leaveBalanceRepository;
+    @Autowired
+    LeaveMasterRepository leaveMasterRepository;
     @Autowired
     LeaveApplicationRepository leaveApplicationRepository;
 
 //    @Value("${leaves.numOfLeaves}")
 //    private int numOfLeaves;
 
-    @Value("${leaves.privilege}")
-    private int privilegeLeaves;
+//    @Value("${leaves.privilege}")
+//    private int privilegeLeaves;
+//
+//    @Value("${leaves.sick.leave}")
+//    private int sickLeaves;
+//
+//    @Value("${leaves.bereavement}")
+//    private int bereavementLeaves;
 
-    @Value("${leaves.sick.leave}")
-    private int sickLeaves;
 
-    @Value("${leaves.bereavement}")
-    private int bereavementLeaves;
+    public boolean checkIfEmployeeIsHR(long hrId){
+        Optional<Employee> optionalEmployee = employeeRepository.findById(hrId);
+
+        if(optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee() && optionalEmployee.get().getRole() == Role.HR){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 
     public boolean employeeExistsById(long employeeId) {
         if (employeeRepository.existsById(employeeId))
@@ -70,22 +82,24 @@ public class EmployeeService {
         EmployeeResponse getAllEmployeeResponse = new EmployeeResponse();
 
         if (isListEmpty()) {
-//            getAllEmployeeResponse.setHttpStatus(HttpStatus.BAD_REQUEST);
             getAllEmployeeResponse.setResponseMessage("Employee List is Empty!");
             return new ResponseEntity<>(getAllEmployeeResponse, HttpStatus.BAD_REQUEST);
         } else {
             getAllEmployeeResponse.setEmployeeResponseList(employeeRepository.findAll());
-//            getAllEmployeeResponse.setHttpStatus(HttpStatus.OK);
             getAllEmployeeResponse.setResponseMessage("Employees Found!");
             return new ResponseEntity<>(getAllEmployeeResponse, HttpStatus.OK);
         }
     }
 
+    public List<Employee> getAllEmployeesList(){
+        return employeeRepository.findAll();
+    }
+
+
     public ResponseEntity<EmployeeResponse> getActiveEmployees() {
         EmployeeResponse getActiveEmployeeResponse = new EmployeeResponse();
 
         if (isListEmpty()) {
-//            getActiveEmployeeResponse.setHttpStatus(HttpStatus.BAD_REQUEST);
             getActiveEmployeeResponse.setResponseMessage("Employee List is Empty!");
             return new ResponseEntity<>(getActiveEmployeeResponse, HttpStatus.BAD_REQUEST);
         } else {
@@ -141,13 +155,16 @@ public class EmployeeService {
 
             employee.setCurrentEmployee(true);
             employee.setLastWorkingDay(null);
-            Leaves leaves = new Leaves();
-            leaves.setBereavementLeaves(this.bereavementLeaves);
-            leaves.setSickLeaves(this.sickLeaves);
-            leaves.setPrivilegeLeaves(this.privilegeLeaves);
-            employee.setLeaves(leaves);
-            employeeRepository.save(employee);
+            employee.setLeaveBalances(new LeavesMaster().getLeaveBalances());
 
+
+//            LeavesMaster leavesMaster = new LeavesMaster();
+//            leaveMaster.setBereavementLeaves(this.bereavementLeaves);
+//            leaveMaster.setSickLeaves(this.sickLeaves);
+//            leaveMaster.setPrivilegeLeaves(this.privilegeLeaves);
+//            employee.setLeaves(leavesMaster);
+            Employee savedEmployee =  employeeRepository.save(employee);
+            initializeLeaveBalances(savedEmployee);
             saveEmployeeResponse.setResponseMessage("Employee Details Saved Successfully.");
 
             saveEmployeeResponse.setEmployeeResponse(employeeRepository.findByEmailId(employee.getEmailId()));
@@ -155,6 +172,20 @@ public class EmployeeService {
             return new ResponseEntity<>(saveEmployeeResponse, HttpStatus.OK);
         }
     }
+
+    private void initializeLeaveBalances(Employee employee) {
+        // Fetch all leave types from the LeaveMaster table
+        List<LeavesMaster> leaveMasters = leaveMasterRepository.findAll();
+
+        // Create initial leave balances for each leave type
+        for (LeavesMaster leaveMaster : leaveMasters) {
+            LeaveBalance leaveBalance = new LeaveBalance();
+            leaveBalance.setEmployee(employee);
+            leaveBalance.setLeavesMaster(leaveMaster);
+            leaveBalance.setBalance(leaveMaster.getInitialBalance());
+
+            leaveBalanceRepository.save(leaveBalance);
+        }}
 
     public void deleteEmployeeById(long employeeId) {
         employeeRepository.deleteById(employeeId);
@@ -186,8 +217,8 @@ public class EmployeeService {
 
     }
 
-    public ResponseEntity<Object> updateEmployee(Employee updateEmployee, long id) {
-
+    public ResponseEntity<EmployeeResponse> updateEmployee(Employee updateEmployee, long id) {
+        EmployeeResponse updateEmployeeResponse = new EmployeeResponse();
         if (employeeRepository.existsById(id)) {
             Employee tempEmployee = employeeRepository.findById(id).get();
             tempEmployee.setDateOfBirth(updateEmployee.getDateOfBirth());
@@ -199,10 +230,13 @@ public class EmployeeService {
             tempEmployee.setEmployeeId(id);
             employeeRepository.save(tempEmployee);
 
+            updateEmployeeResponse.setEmployeeResponse(employeeRepository.findById(id).get());
+            updateEmployeeResponse.setResponseMessage("Employee Data Updated Successfully.");
 
-            return ResponseEntity.status(HttpStatus.OK).body(employeeRepository.findById(id).get());
+            return new ResponseEntity<>(updateEmployeeResponse, HttpStatus.OK);
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Employee does not exist.");
+            updateEmployeeResponse.setResponseMessage("Employee Does not exist!");
+            return new ResponseEntity<>(updateEmployeeResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -238,9 +272,9 @@ public class EmployeeService {
 
         if (optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee()){
 
-            Leaves tempLeaves = optionalEmployee.get().getLeaves();
+//            LeavesMaster tempLeavesMaster = optionalEmployee.get().getLeaves();
 
-            leaveResponse.setLeaves(tempLeaves);
+//            leaveResponse.setLeaves(tempLeavesMaster);
             leaveResponse.setResponseMessage("Here is your leave Data");
             return new ResponseEntity<>(leaveResponse, HttpStatus.OK);
         }else{
@@ -265,73 +299,57 @@ return null;
     }
 
     public ResponseEntity<ConfirmMessage> approveLeave(long hrId, long appId, int action) {
-        Optional<Employee> optionalEmployee = employeeRepository.findById(hrId);
-        Optional<LeaveApplication> optionalLeaveApplication = leaveApplicationRepository.findById(appId);
-        ConfirmMessage confirmMessage = new ConfirmMessage();
-
-        if(optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee() && optionalEmployee.get().getRole() == Role.HR && optionalLeaveApplication.isPresent()){
-
-            LeaveApplication leaveApplication = optionalLeaveApplication.get();
-
-            if(leaveApplication.isLeaveApproved() || leaveApplication.isLeaveRejected()){
-                confirmMessage.setRequestStatus("Leave has already been operated on!");
-                return new ResponseEntity<>(confirmMessage, HttpStatus.BAD_REQUEST);
-            }else if(action == 1){
-                leaveApplication.setLeaveApproved(true);
-                leaveApplication.setApplicationId(appId);
-                Employee employee = leaveApplication.getEmployee();
-                Leaves leaves = employee.getLeaves();
-
-                if(leaveApplication.getLeaveType() == LeaveType.PRIVILEGE_LEAVES){
-                   leaves.setPrivilegeLeaves(leaves.getPrivilegeLeaves() - leaveApplication.getNumerOfDays());
-                } else if (leaveApplication.getLeaveType() == LeaveType.BEREAVEMENT_LEAVES) {
-                    leaves.setBereavementLeaves(leaves.getBereavementLeaves() - leaveApplication.getNumerOfDays());
-                }else {
-                    leaves.setSickLeaves(leaves.getSickLeaves() - leaveApplication.getNumerOfDays());
-                }
-
-                //employee.setLeaves(leaves);
-                updateEmployee(employee, leaveApplication.getEmployee().getEmployeeId());
-
-                employeeRepository.save(employee);
-                leaveApplicationRepository.save(leaveApplication);
-                confirmMessage.setRequestStatus("Leave Approved!");
-
-                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
-            }else if(action == 0){
-                leaveApplication.setLeaveRejected(true);
-                leaveApplication.setApplicationId(appId);
-                leaveApplicationRepository.save(leaveApplication);
-                confirmMessage.setRequestStatus("Leave Rejected!");
-
-                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
-            }
-        }
-        else{
-            confirmMessage.setRequestStatus("Oops! Something went wrong...");
-            return new ResponseEntity<>(confirmMessage, HttpStatus.UNAUTHORIZED);
-        }
-
+//        Optional<Employee> optionalEmployee = employeeRepository.findById(hrId);
+//        Optional<LeaveApplication> optionalLeaveApplication = leaveApplicationRepository.findById(appId);
+//        ConfirmMessage confirmMessage = new ConfirmMessage();
+//
+//        if(optionalEmployee.isPresent() && optionalEmployee.get().isCurrentEmployee() && optionalEmployee.get().getRole() == Role.HR && optionalLeaveApplication.isPresent()){
+//
+//            LeaveApplication leaveApplication = optionalLeaveApplication.get();
+//
+//            if(leaveApplication.isLeaveApproved() || leaveApplication.isLeaveRejected()){
+//                confirmMessage.setRequestStatus("Leave has already been operated on!");
+//                return new ResponseEntity<>(confirmMessage, HttpStatus.BAD_REQUEST);
+//            }else if(action == 1){
+//                leaveApplication.setLeaveApproved(true);
+//                leaveApplication.setApplicationId(appId);
+//                Employee employee = leaveApplication.getEmployee();
+//                LeavesMaster leavesMaster = employee.getLeaves();
+//
+//                if(leaveApplication.getLeaveType() == LeaveType.PRIVILEGE_LEAVES){
+//                   leavesMaster.setPrivilegeLeaves(leavesMaster.getPrivilegeLeaves() - leaveApplication.getNumerOfDays());
+//                } else if (leaveApplication.getLeaveType() == LeaveType.BEREAVEMENT_LEAVES) {
+//                    leavesMaster.setBereavementLeaves(leavesMaster.getBereavementLeaves() - leaveApplication.getNumerOfDays());
+//                }else {
+//                    leavesMaster.setSickLeaves(leavesMaster.getSickLeaves() - leaveApplication.getNumerOfDays());
+//                }
+//
+//                //employee.setLeaves(leaves);
+//                updateEmployee(employee, leaveApplication.getEmployee().getEmployeeId());
+//
+//                employeeRepository.save(employee);
+//                leaveApplicationRepository.save(leaveApplication);
+//                confirmMessage.setRequestStatus("Leave Approved!");
+//
+//                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
+//            }else if(action == 0){
+//                leaveApplication.setLeaveRejected(true);
+//                leaveApplication.setApplicationId(appId);
+//                leaveApplicationRepository.save(leaveApplication);
+//                confirmMessage.setRequestStatus("Leave Rejected!");
+//
+//                return new ResponseEntity<>(confirmMessage, HttpStatus.OK);
+//            }
+//        }
+//        else{
+//            confirmMessage.setRequestStatus("Oops! Something went wrong...");
+//            return new ResponseEntity<>(confirmMessage, HttpStatus.UNAUTHORIZED);
+//        }
+//
+//        return null;
         return null;
     }
 
-
-
-
-
 }
 
-//    public void getAllLeavesData() {
-//        Optional<Employee> tempEmployee =  employeeRepository.findById(empId);
-//        EmployeeResponse employeeResponse = new EmployeeResponse();
-//
-//        if(tempEmployee.isPresent() && tempEmployee.get().isCurrentEmployee()){
-//            employeeResponse.setResponseMessage("Here are your leaves: ");
-//            employeeResponse.setLeaves(tempEmployee.get().getLeaves());
-//            return new ResponseEntity<>(employeeResponse, HttpStatus.OK);
-//        }else {
-//            employeeResponse.setResponseMessage("Please enter a valid Employee Id.");
-//            return new ResponseEntity<>(employeeResponse, HttpStatus.BAD_REQUEST);
-//        }
-//    }
 
